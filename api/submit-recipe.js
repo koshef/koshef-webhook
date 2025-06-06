@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import formidable from 'formidable';
+import { IncomingForm } from 'formidable'; // ✅ FIXED
 import fs from 'fs';
 
 // Disable Next.js default body parser
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const form = formidable({ multiples: false });
+  const form = new IncomingForm({ multiples: false }); // ✅ FIXED
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
