@@ -1,8 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
-import { IncomingForm } from 'formidable';
+import formidable from 'formidable';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-// Disable Next.js bodyParser to use formidable
+// Required for ESM support of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Disable the default body parser for file uploads
 export const config = {
   api: {
     bodyParser: false,
@@ -19,11 +25,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const form = new IncomingForm({ keepExtensions: true });
+  const form = formidable({
+    multiples: false,
+    uploadDir: __dirname,
+    keepExtensions: true,
+  });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      return res.status(400).json({ error: 'Error parsing form data' });
+      return res.status(400).json({ error: 'Form parsing failed' });
     }
 
     const { name, ingredients, instructions, source = 'GPT' } = fields;
@@ -34,41 +44,41 @@ export default async function handler(req, res) {
 
     let image_url = null;
 
-    // Handle file upload if provided
     if (files.image) {
       const file = files.image[0];
       const fileExt = file.originalFilename.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `recipe-images/${fileName}`;
 
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('recipe-images')
         .upload(filePath, fs.createReadStream(file.filepath), {
           contentType: file.mimetype,
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
         return res.status(500).json({ error: 'Image upload failed' });
       }
 
-      const { data: publicUrlData } = supabase.storage
+      const { data: publicUrl } = supabase.storage
         .from('recipe-images')
         .getPublicUrl(filePath);
 
-      image_url = publicUrlData.publicUrl;
+      image_url = publicUrl.publicUrl;
     }
 
-    // Insert recipe into database
-    const { data: insertData, error: insertError } = await supabase
+    const { data, error: insertError } = await supabase
       .from('recipes')
       .insert([{ name, ingredients, instructions, image_url, source }])
       .select();
 
     if (insertError) {
-      console.error('Database error:', insertError);
-      return res.status(500).json({ error: 'Failed to save recipe' });
+      return res.status(500).json({ error: 'Recipe insert failed' });
     }
+
+    res.status(200).json({ success: true, data });
+  });
+}
 
     res.status(200).json({ success: true, data: insertData });
   });
