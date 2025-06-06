@@ -1,14 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import formidable from 'formidable';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
-// Required for ESM support of __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Disable the default body parser for file uploads
+// Disable Next.js default body parser
 export const config = {
   api: {
     bodyParser: false,
@@ -25,15 +19,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const form = formidable({
-    multiples: false,
-    uploadDir: __dirname,
-    keepExtensions: true,
-  });
+  const form = formidable({ multiples: false });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      return res.status(400).json({ error: 'Form parsing failed' });
+      return res.status(400).json({ error: 'Error parsing form data' });
     }
 
     const { name, ingredients, instructions, source = 'GPT' } = fields;
@@ -45,7 +35,7 @@ export default async function handler(req, res) {
     let image_url = null;
 
     if (files.image) {
-      const file = files.image[0];
+      const file = files.image;
       const fileExt = file.originalFilename.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `recipe-images/${fileName}`;
@@ -57,14 +47,15 @@ export default async function handler(req, res) {
         });
 
       if (uploadError) {
+        console.error('Upload error:', uploadError);
         return res.status(500).json({ error: 'Image upload failed' });
       }
 
-      const { data: publicUrl } = supabase.storage
+      const { data: publicUrlData } = supabase.storage
         .from('recipe-images')
         .getPublicUrl(filePath);
 
-      image_url = publicUrl.publicUrl;
+      image_url = publicUrlData.publicUrl;
     }
 
     const { data, error: insertError } = await supabase
@@ -73,13 +64,10 @@ export default async function handler(req, res) {
       .select();
 
     if (insertError) {
-      return res.status(500).json({ error: 'Recipe insert failed' });
+      console.error('Insert error:', insertError);
+      return res.status(500).json({ error: 'Failed to save recipe' });
     }
 
     res.status(200).json({ success: true, data });
-  });
-}
-
-    res.status(200).json({ success: true, data: insertData });
   });
 }
