@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { IncomingForm } from 'formidable'; // ✅ FIXED
+import formidable from 'formidable';
 import fs from 'fs';
 
 // Disable Next.js default body parser
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const form = new IncomingForm({ multiples: false }); // ✅ FIXED
+  const form = formidable({ multiples: false });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
@@ -36,7 +36,8 @@ export default async function handler(req, res) {
 
     if (files.image) {
       const file = files.image;
-      const fileExt = file.originalFilename.split('.').pop();
+      const originalName = file.originalFilename || file.newFilename || 'upload.jpg';
+      const fileExt = originalName.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `recipe-images/${fileName}`;
 
