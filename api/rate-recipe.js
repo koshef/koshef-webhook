@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: insertError.message });
   }
 
-  // Recalculate average
+  // Recalculate average and count
   const { data: ratings, error: fetchError } = await supabase
     .from('recipe_ratings')
     .select('rating')
@@ -35,18 +35,27 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: fetchError.message });
   }
 
-  const total = ratings.reduce((sum, r) => sum + r.rating, 0);
-  const average = parseFloat((total / ratings.length).toFixed(2));
+  const totalRatings = ratings.length;
+  const totalScore = ratings.reduce((sum, r) => sum + r.rating, 0);
+  const average = parseFloat((totalScore / totalRatings).toFixed(2));
 
-  // Update recipe with new average
+  // Update recipe with new average + rating count
   const { error: updateError } = await supabase
     .from('recipes')
-    .update({ average_rating: average })
+    .update({
+      average_rating: average,
+      rating_count: totalRatings // NEW
+    })
     .eq('id', recipe_id);
 
   if (updateError) {
     return res.status(500).json({ error: updateError.message });
   }
 
-  return res.status(200).json({ success: true, average_rating: average });
+  // Return both average and count
+  return res.status(200).json({
+    success: true,
+    average_rating: average,
+    rating_count: totalRatings // NEW
+  });
 }
