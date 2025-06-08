@@ -49,13 +49,13 @@ export default async function handler(req, res) {
       const fileName = `${Date.now()}.${fileExt}`;
       const storagePath = `recipe-images/${fileName}`;
 
-      const fileStream = fs.createReadStream(filepath);
+     const fileBuffer = fs.readFileSync(filepath);
 
-      const { error: uploadError } = await supabase.storage
-        .from('recipe-images')
-        .upload(storagePath, fileStream, {
-          contentType: file.mimetype,
-        });
+const { error: uploadError } = await supabase.storage
+  .from('recipe-images')
+  .upload(storagePath, fileBuffer, {
+    contentType: file.mimetype,
+  });
 
       if (uploadError) {
         console.error('Image upload failed:', uploadError);
