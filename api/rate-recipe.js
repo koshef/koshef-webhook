@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: insertError.message });
   }
 
-  // Recalculate average and count
+  // Fetch all ratings for the recipe
   const { data: ratings, error: fetchError } = await supabase
     .from('recipe_ratings')
     .select('rating')
@@ -35,16 +35,20 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: fetchError.message });
   }
 
+  if (!ratings || ratings.length === 0) {
+    return res.status(500).json({ error: 'No ratings found for this recipe.' });
+  }
+
   const totalRatings = ratings.length;
   const totalScore = ratings.reduce((sum, r) => sum + r.rating, 0);
   const average = parseFloat((totalScore / totalRatings).toFixed(2));
 
-  // Update recipe with new average + rating count
+  // Update the recipe with average and count
   const { error: updateError } = await supabase
     .from('recipes')
     .update({
       average_rating: average,
-      rating_count: totalRatings // NEW
+      rating_count: totalRatings
     })
     .eq('id', recipe_id);
 
@@ -52,10 +56,10 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: updateError.message });
   }
 
-  // Return both average and count
   return res.status(200).json({
     success: true,
+    recipe_id,
     average_rating: average,
-    rating_count: totalRatings // NEW
+    rating_count: totalRatings
   });
 }
