@@ -1,3 +1,4 @@
+// === File: /components/ImageUploader.js ===
 import { useState } from 'react';
 
 export default function ImageUploader({ onUploaded }) {
@@ -9,6 +10,7 @@ export default function ImageUploader({ onUploaded }) {
 
     setUploading(true);
 
+    // Get signed URL
     const res = await fetch('/api/get-upload-url', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -17,6 +19,7 @@ export default function ImageUploader({ onUploaded }) {
 
     const { uploadUrl, publicUrl } = await res.json();
 
+    // Upload the image
     await fetch(uploadUrl, {
       method: 'PUT',
       headers: { 'Content-Type': file.type },
@@ -24,7 +27,7 @@ export default function ImageUploader({ onUploaded }) {
     });
 
     setUploading(false);
-    onUploaded(publicUrl);
+    onUploaded(publicUrl); // Send public URL to parent component
   };
 
   return (
