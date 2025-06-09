@@ -1,13 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
-import { IncomingForm } from 'formidable';
-import fs from 'fs';
-import { Readable } from 'stream';
 
-// Disable body parsing so we can use formidable
 export const config = {
   api: {
-    bodyParser: false,
-  },
+    bodyParser: true // Accept JSON directly
+  }
 };
 
 const supabase = createClient(
@@ -20,65 +16,52 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const form = new IncomingForm({ keepExtensions: true });
-
-  form.parse(req, async (err, fields, files) => {
-    if (err) {
-      console.error('Form parse error:', err);
-      return res.status(400).json({ error: 'Error parsing form data' });
-    }
-
-    const { name, ingredients, instructions, source = 'GPT' } = fields;
+  try {
+    const {
+      name,
+      ingredients,
+      instructions,
+      source = 'GPT',
+      image_url = null,
+      notes = null
+    } = req.body;
 
     if (!name || !ingredients || !instructions) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    let image_url = null;
+    // Support array or string formats
+    const formattedIngredients = Array.isArray(ingredients)
+      ? ingredients.join('\n')
+      : ingredients;
 
-    if (files.image) {
-      const file = files.image;
-      const filepath = Array.isArray(file) ? file[0].filepath : file.filepath;
+    const formattedInstructions = Array.isArray(instructions)
+      ? instructions.join('\n')
+      : instructions;
 
-      if (!filepath) {
-        return res.status(400).json({ error: 'File path missing' });
-      }
-
-      const originalName = file.originalFilename || 'image.jpg';
-      const fileExt = originalName.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const storagePath = `recipe-images/${fileName}`;
-
-     const fileBuffer = fs.readFileSync(filepath);
-
-const { error: uploadError } = await supabase.storage
-  .from('recipe-images')
-  .upload(storagePath, fileBuffer, {
-    contentType: file.mimetype,
-  });
-
-      if (uploadError) {
-        console.error('Image upload failed:', uploadError);
-        return res.status(500).json({ error: 'Image upload failed' });
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from('recipe-images')
-        .getPublicUrl(storagePath);
-
-      image_url = publicUrlData.publicUrl;
-    }
-
-    const { data, error: insertError } = await supabase
+    const { data, error } = await supabase
       .from('recipes')
-      .insert([{ name, ingredients, instructions, image_url, source }])
+      .insert([
+        {
+          id: `gpt_${Date.now()}`,
+          name,
+          ingredients: formattedIngredients,
+          instructions: formattedInstructions,
+          source,
+          image_url,
+          notes
+        }
+      ])
       .select();
 
-    if (insertError) {
-      console.error('Insert error:', insertError);
+    if (error) {
+      console.error('Insert error:', error);
       return res.status(500).json({ error: 'Failed to save recipe' });
     }
 
-    return res.status(200).json({ success: true, data });
-  });
+    res.status(200).json({ success: true, recipe: data[0] });
+  } catch (err) {
+    console.error('Unexpected error:', err);
+    res.status(500).json({ error: 'Unexpected server error' });
+  }
 }
