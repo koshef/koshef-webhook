@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import formidable from 'formidable';
+import { IncomingForm } from 'formidable';
 import fs from 'fs';
 
 export const config = {
@@ -18,21 +18,20 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const form = new formidable.IncomingForm({ keepExtensions: true });
+  const form = new IncomingForm({ keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
       return res.status(400).json({ error: 'Form parsing error' });
     }
 
-    // GPT testing or empty form: respond with placeholder
+    // GPT fallback for test calls without files
     if (!files.image) {
       return res.status(200).json({
         publicUrl: 'https://koshef.ai/storage/v1/object/public/recipe-images/placeholder.jpg',
       });
     }
 
-    // Otherwise, process image as usual
     const file = files.image[0];
     const fileExt = file.originalFilename.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
