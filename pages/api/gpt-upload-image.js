@@ -4,10 +4,11 @@ import fs from 'fs';
 
 export const config = {
   api: {
-    bodyParser: false, // Needed for formidable to work
+    bodyParser: false,
   },
 };
 
+// Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
@@ -25,10 +26,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Form parsing error' });
     }
 
-    // GPT fallback for test calls without files
+    // Fallback for GPT test call (no image sent)
     if (!files.image) {
       return res.status(200).json({
-        publicUrl: 'https://koshef.ai/storage/v1/object/public/recipe-images/placeholder.jpg',
+        publicUrl:
+          'https://guonzqqdothtyobnsmbp.supabase.co/storage/v1/object/public/recipe-images/recipe-images/1749406401284.jpg',
       });
     }
 
@@ -36,7 +38,6 @@ export default async function handler(req, res) {
     const fileExt = file.originalFilename.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `recipe-images/${fileName}`;
-
     const fileBuffer = await fs.promises.readFile(file.filepath);
 
     const { error } = await supabase.storage
