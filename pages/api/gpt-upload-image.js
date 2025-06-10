@@ -4,7 +4,7 @@ import fs from 'fs';
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // Needed for formidable to work
   },
 };
 
@@ -21,39 +21,40 @@ export default async function handler(req, res) {
   const form = new formidable.IncomingForm({ keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
-    // ✅ If no image file is provided, respond with a dummy URL (for GPT testing)
+    if (err) {
+      return res.status(400).json({ error: 'Form parsing error' });
+    }
+
+    // GPT testing or empty form: respond with placeholder
     if (!files.image) {
       return res.status(200).json({
-        publicUrl: 'https://koshef.ai/storage/v1/object/public/recipe-images/placeholder.jpg'
+        publicUrl: 'https://koshef.ai/storage/v1/object/public/recipe-images/placeholder.jpg',
       });
     }
 
-    try {
-      const file = files.image[0];
-      const fileExt = file.originalFilename.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `recipe-images/${fileName}`;
+    // Otherwise, process image as usual
+    const file = files.image[0];
+    const fileExt = file.originalFilename.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `recipe-images/${fileName}`;
 
-      const fileBuffer = await fs.promises.readFile(file.filepath);
+    const fileBuffer = await fs.promises.readFile(file.filepath);
 
-      const { error } = await supabase.storage
-        .from('recipe-images')
-        .upload(filePath, fileBuffer, {
-          contentType: file.mimetype,
-          upsert: false,
-        });
+    const { error } = await supabase.storage
+      .from('recipe-images')
+      .upload(filePath, fileBuffer, {
+        contentType: file.mimetype,
+        upsert: false,
+      });
 
-      if (error) {
-        return res.status(500).json({ error: error.message });
-      }
-
-      const { data } = supabase.storage
-        .from('recipe-images')
-        .getPublicUrl(filePath);
-
-      return res.status(200).json({ publicUrl: data.publicUrl });
-    } catch (e) {
-      return res.status(500).json({ error: 'Unexpected error' });
+    if (error) {
+      return res.status(500).json({ error: error.message });
     }
+
+    const { data } = supabase.storage
+      .from('recipe-images')
+      .getPublicUrl(filePath);
+
+    return res.status(200).json({ publicUrl: data.publicUrl });
   });
 }
