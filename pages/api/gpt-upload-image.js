@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
-const formidable = require('formidable');
 import fs from 'fs';
+import formidable from 'formidable'; // This is okay if using type: 'module' in package.json
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // Required to handle form-data manually
   },
 };
 
@@ -25,16 +25,18 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Form parsing error' });
     }
 
+    // No image provided (e.g. GPT test or optional upload)
     if (!files.image) {
       return res.status(200).json({
         publicUrl: 'https://koshef.ai/storage/v1/object/public/recipe-images/placeholder.jpg',
       });
     }
 
-    const file = files.image[0];
+    const file = Array.isArray(files.image) ? files.image[0] : files.image;
     const fileExt = file.originalFilename.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `recipe-images/${fileName}`;
+
     const fileBuffer = await fs.promises.readFile(file.filepath);
 
     const { error } = await supabase.storage
