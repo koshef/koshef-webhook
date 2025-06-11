@@ -1,8 +1,7 @@
-import { IncomingForm } from 'formidable';
-import fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
+import formidable from 'formidable';
+import fs from 'fs';
 
-// Disables Next.js body parsing so we can handle the stream ourselves
 export const config = {
   api: {
     bodyParser: false,
@@ -19,27 +18,30 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const form = new IncomingForm({ multiples: false, keepExtensions: true });
+  const form = new formidable.IncomingForm({ keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error('Form parse error:', err);
-      return res.status(400).json({ error: 'Form parsing failed' });
+      return res.status(400).json({ error: 'Form parsing error' });
     }
 
+    // ✅ Handle missing image (GPT test case)
     if (!files.image) {
       return res.status(200).json({
         publicUrl: null,
+        message: 'No image received',
       });
     }
 
     const file = files.image[0];
-    const buffer = await fs.promises.readFile(file.filepath);
-    const fileName = `recipe-images/${Date.now()}-${file.originalFilename}`;
+    const fileExt = file.originalFilename.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `recipe-images/${fileName}`;
+    const fileBuffer = await fs.promises.readFile(file.filepath);
 
     const { error } = await supabase.storage
       .from('recipe-images')
-      .upload(fileName, buffer, {
+      .upload(filePath, fileBuffer, {
         contentType: file.mimetype,
         upsert: false,
       });
@@ -50,7 +52,7 @@ export default async function handler(req, res) {
 
     const { data } = supabase.storage
       .from('recipe-images')
-      .getPublicUrl(fileName);
+      .getPublicUrl(filePath);
 
     return res.status(200).json({ publicUrl: data.publicUrl });
   });
