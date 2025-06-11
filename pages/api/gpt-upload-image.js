@@ -25,11 +25,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Form parsing error' });
     }
 
-    // Handle optional image uploads
-    if (!files.image || !files.image[0]) {
+    if (!files.image) {
       return res.status(200).json({
         publicUrl: 'https://koshef.ai/storage/v1/object/public/recipe-images/placeholder.jpg',
-        info: 'No image provided — placeholder returned',
       });
     }
 
