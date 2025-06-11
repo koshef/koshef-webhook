@@ -1,6 +1,6 @@
 import formidable from 'formidable';
-import fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
 
 export const config = {
   api: {
@@ -18,14 +18,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const form = formidable({ multiples: false, keepExtensions: true });
+  const form = formidable({ keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
-    if (err || !files.image) {
-      return res.status(400).json({ error: 'Image upload failed' });
+    if (err) return res.status(400).json({ error: 'Form parsing error' });
+
+    if (!files.image) {
+      return res.status(400).json({ error: 'No image provided' });
     }
 
-    const file = files.image;
+    const file = files.image[0];
     const fileExt = file.originalFilename.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `recipe-images/${fileName}`;
@@ -38,9 +40,7 @@ export default async function handler(req, res) {
         upsert: false,
       });
 
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
+    if (error) return res.status(500).json({ error: error.message });
 
     const { data } = supabase.storage
       .from('recipe-images')
