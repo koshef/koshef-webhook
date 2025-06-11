@@ -18,19 +18,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const form = formidable({ multiples: false, keepExtensions: true });
+  const form = new formidable.IncomingForm({ keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      return res.status(400).json({ error: 'Form parsing failed' });
+      return res.status(400).json({ error: 'Form parsing error' });
     }
 
-    const file = files?.image;
-    if (!file) {
-      return res.status(400).json({ error: 'No image uploaded' });
+    // Handle optional image uploads
+    if (!files.image || !files.image[0]) {
+      return res.status(200).json({
+        publicUrl: 'https://koshef.ai/storage/v1/object/public/recipe-images/placeholder.jpg',
+        info: 'No image provided — placeholder returned',
+      });
     }
 
-    const fileExt = file.originalFilename?.split('.').pop() || 'jpg';
+    const file = files.image[0];
+    const fileExt = file.originalFilename.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `recipe-images/${fileName}`;
     const fileBuffer = await fs.promises.readFile(file.filepath);
