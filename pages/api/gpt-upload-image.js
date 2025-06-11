@@ -28,7 +28,9 @@ export default async function handler(req, res) {
 
     // Fallback for GPT test call (no image sent)
    if (!files.image) {
-  return res.status(400).json({ error: 'No image provided in the request' });
+  return res.status(200).json({
+    publicUrl: 'https://koshef.ai/storage/v1/object/public/recipe-images/placeholder.jpg',
+  });
 }
 
     const file = files.image[0];
