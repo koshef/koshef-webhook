@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
 import formidable from 'formidable';
 import fs from 'fs';
+import { createClient } from '@supabase/supabase-js';
 
 export const config = {
   api: {
@@ -18,22 +18,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const form = new formidable.IncomingForm({ keepExtensions: true });
+  const form = formidable({ multiples: false, keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
-    if (err) {
-      return res.status(400).json({ error: 'Form parsing error' });
+    if (err || !files.image) {
+      return res.status(400).json({ error: 'Image upload failed' });
     }
 
-    // ✅ Handle missing image (GPT test case)
-    if (!files.image) {
-      return res.status(200).json({
-        publicUrl: null,
-        message: 'No image received',
-      });
-    }
-
-    const file = files.image[0];
+    const file = files.image;
     const fileExt = file.originalFilename.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `recipe-images/${fileName}`;
