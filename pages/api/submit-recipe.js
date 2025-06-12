@@ -23,14 +23,17 @@ export default async function handler(req, res) {
       instructions,
       source = 'GPT',
       image_url = null,
-      notes = null
+      notes = null,
+      tags = null,
+      category = null,
+      diet_type = null,
+      difficulty = null
     } = req.body;
 
     if (!name || !ingredients || !instructions) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Support array or string formats
     const formattedIngredients = Array.isArray(ingredients)
       ? ingredients.join('\n')
       : ingredients;
@@ -49,7 +52,11 @@ export default async function handler(req, res) {
           instructions: formattedInstructions,
           source,
           image_url,
-          notes
+          notes,
+          tags,
+          category,
+          diet_type,
+          difficulty
         }
       ])
       .select();
