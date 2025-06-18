@@ -1,130 +1,75 @@
+import Image from 'next/image';
+import Link from 'next/link';
 import { useState } from 'react';
-import ImageUploader from '../components/ImageUploader';
 
 export default function Home() {
-  const [imageUrl, setImageUrl] = useState('');
-  const [recipeName, setRecipeName] = useState('');
-  const [ingredients, setIngredients] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const [notes, setNotes] = useState('');
-  const [tags, setTags] = useState('');
-  const [category, setCategory] = useState('');
-  const [dietType, setDietType] = useState('');
-  const [difficulty, setDifficulty] = useState('');
-  const [success, setSuccess] = useState(false);
-
-  const handleImageUploaded = (url) => {
-    setImageUrl(url);
-  };
-
-  const handleSubmit = async () => {
-    const res = await fetch('/api/submit-recipe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: recipeName,
-        ingredients: ingredients.split('\n'),
-        instructions: instructions.split('\n'),
-        image_url: imageUrl,
-        source: 'GPT',
-        notes,
-        tags: tags.split(',').map(tag => tag.trim()),
-        category,
-        diet_type: dietType,
-        difficulty,
-      }),
-    });
-
-    const data = await res.json();
-    setSuccess(data.success);
-  };
-
   return (
-    <main style={{ padding: '2rem', maxWidth: '700px', margin: 'auto', fontFamily: 'sans-serif' }}>
-      <h1 style={{ color: '#7A9E7E' }}>Submit a Kosher Recipe</h1>
+    <main className="min-h-screen bg-[#F6F0E5] text-[#3C3C3C]">
+      <header className="flex items-center justify-between p-4 shadow-md bg-white">
+        <div className="flex items-center space-x-3">
+          <Image src="/Koshef-2.jpg" alt="Koshef Logo" width={60} height={60} />
+          <h1 className="text-2xl font-bold text-[#7A9E7E]">Koshef</h1>
+        </div>
+        <nav className="space-x-4">
+          <Link href="#" className="hover:text-[#C1694F]">Home</Link>
+          <Link href="#about" className="hover:text-[#C1694F]">About</Link>
+          <Link href="#recipes" className="hover:text-[#C1694F]">Recipes</Link>
+          <Link href="#submit" className="hover:text-[#C1694F]">Submit</Link>
+          <Link href="#rate" className="hover:text-[#C1694F]">Rate</Link>
+          <Link href="#upload" className="hover:text-[#C1694F]">Upload Image</Link>
+          <Link href="#contact" className="hover:text-[#C1694F]">Contact</Link>
+        </nav>
+      </header>
 
-      <ImageUploader onUploaded={handleImageUploaded} />
+      <section id="about" className="p-12 text-center">
+        <h2 className="text-3xl font-semibold text-[#C1694F]">About Koshef</h2>
+        <p className="mt-4 max-w-2xl mx-auto">
+          Koshef is a community-driven kosher recipe collection platform where you can share, explore,
+          and rate delicious dishes while staying true to dietary values.
+        </p>
+      </section>
 
-      <input
-        type="text"
-        placeholder="Recipe Name"
-        value={recipeName}
-        onChange={(e) => setRecipeName(e.target.value)}
-        style={{ width: '100%', marginTop: '1rem', padding: '0.5rem' }}
-      />
+      <section id="recipes" className="p-12 bg-[#FFFBEF]">
+        <h2 className="text-2xl font-semibold text-[#7A9E7E] mb-6">Explore Recipes</h2>
+        <p className="text-gray-700">Search and explore user-submitted recipes here... (data loading coming soon)</p>
+      </section>
 
-      <textarea
-        placeholder="Ingredients (one per line)"
-        value={ingredients}
-        onChange={(e) => setIngredients(e.target.value)}
-        style={{ width: '100%', marginTop: '1rem', padding: '0.5rem', height: '100px' }}
-      />
+      <section id="submit" className="p-12">
+        <h2 className="text-2xl font-semibold text-[#C1694F] mb-6">Submit a Recipe</h2>
+        <form className="space-y-4 max-w-xl mx-auto">
+          <input type="text" placeholder="Recipe Name" className="w-full p-2 border" />
+          <textarea placeholder="Ingredients (one per line)" className="w-full p-2 border h-24" />
+          <textarea placeholder="Instructions (one per line)" className="w-full p-2 border h-24" />
+          <textarea placeholder="Notes (optional)" className="w-full p-2 border h-16" />
+          <button type="submit" className="bg-[#7A9E7E] text-white px-4 py-2 rounded hover:bg-[#638a68]">
+            Submit Recipe
+          </button>
+        </form>
+      </section>
 
-      <textarea
-        placeholder="Instructions (one per line)"
-        value={instructions}
-        onChange={(e) => setInstructions(e.target.value)}
-        style={{ width: '100%', marginTop: '1rem', padding: '0.5rem', height: '100px' }}
-      />
+      <section id="rate" className="p-12 bg-[#FFFBEF]">
+        <h2 className="text-2xl font-semibold text-[#7A9E7E] mb-4">Rate a Recipe</h2>
+        <p className="text-gray-700">This section will allow users to rate recipes (integration coming soon).</p>
+      </section>
 
-      <textarea
-        placeholder="Notes (optional)"
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        style={{ width: '100%', marginTop: '1rem', padding: '0.5rem', height: '60px' }}
-      />
+      <section id="upload" className="p-12">
+        <h2 className="text-2xl font-semibold text-[#C1694F] mb-6">Upload an Image</h2>
+        <form className="space-y-4 max-w-xl mx-auto">
+          <input type="text" placeholder="Recipe ID" className="w-full p-2 border" />
+          <input type="email" placeholder="Email Address" className="w-full p-2 border" />
+          <input type="file" className="w-full" />
+          <button type="submit" className="bg-[#C1694F] text-white px-4 py-2 rounded hover:bg-[#a5513e]">
+            Upload
+          </button>
+        </form>
+      </section>
 
-      <input
-        type="text"
-        placeholder="Tags (comma separated, e.g. Shabbos, Gluten-Free)"
-        value={tags}
-        onChange={(e) => setTags(e.target.value)}
-        style={{ width: '100%', marginTop: '1rem', padding: '0.5rem' }}
-      />
+      <section id="contact" className="p-12 text-center bg-[#FFFBEF]">
+        <h2 className="text-2xl font-semibold text-[#7A9E7E]">Contact Us</h2>
+        <p className="mt-2">Questions? Suggestions? Contact us at support@koshef.ai</p>
+      </section>
 
-      <input
-        type="text"
-        placeholder="Category (e.g. Dinner, Dessert)"
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
-        style={{ width: '100%', marginTop: '1rem', padding: '0.5rem' }}
-      />
-
-      <input
-        type="text"
-        placeholder="Diet Type (Meat, Dairy, Parve)"
-        value={dietType}
-        onChange={(e) => setDietType(e.target.value)}
-        style={{ width: '100%', marginTop: '1rem', padding: '0.5rem' }}
-      />
-
-      <select
-        value={difficulty}
-        onChange={(e) => setDifficulty(e.target.value)}
-        style={{ width: '100%', marginTop: '1rem', padding: '0.5rem' }}
-      >
-        <option value="">Select Difficulty</option>
-        <option value="Easy">Easy</option>
-        <option value="Medium">Medium</option>
-        <option value="Hard">Hard</option>
-      </select>
-
-      <button
-        onClick={handleSubmit}
-        style={{
-          marginTop: '1.5rem',
-          padding: '0.75rem 1.5rem',
-          backgroundColor: '#C1694F',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '5px',
-          cursor: 'pointer'
-        }}
-      >
-        Submit Recipe
-      </button>
-
-      {success && <p style={{ color: '#7A9E7E', marginTop: '1rem' }}>✅ Recipe submitted successfully!</p>}
+      <footer className="text-center py-6 text-sm text-gray-500">&copy; 2025 Koshef.ai. All rights reserved.</footer>
     </main>
   );
 }
