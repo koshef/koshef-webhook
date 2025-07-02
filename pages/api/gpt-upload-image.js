@@ -1,4 +1,3 @@
-// pages/api/gpt-upload-image.js
 import { createClient } from '@supabase/supabase-js';
 import formidable from 'formidable';
 import fs from 'fs';
@@ -28,9 +27,14 @@ export default async function handler(req, res) {
     }
 
     const imageFile = files.image;
+    const recipeId = fields.recipe_id;
 
     if (!imageFile) {
       return res.status(400).json({ error: 'No image provided' });
+    }
+
+    if (!recipeId) {
+      return res.status(400).json({ error: 'No recipe_id provided' });
     }
 
     const file = Array.isArray(imageFile) ? imageFile[0] : imageFile;
@@ -39,21 +43,33 @@ export default async function handler(req, res) {
     const filePath = `recipe-images/${fileName}`;
     const buffer = await fs.promises.readFile(file.filepath);
 
-    const { error } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('recipe-images')
       .upload(filePath, buffer, {
         contentType: file.mimetype,
         upsert: false,
       });
 
-    if (error) {
-      return res.status(500).json({ error: error.message });
+    if (uploadError) {
+      return res.status(500).json({ error: uploadError.message });
     }
 
     const { data } = supabase.storage
       .from('recipe-images')
       .getPublicUrl(filePath);
 
-    return res.status(200).json({ publicUrl: data.publicUrl });
+    const publicUrl = data.publicUrl;
+
+    // Update the recipe's image_url in Supabase
+    const { error: updateError } = await supabase
+      .from('recipes')
+      .update({ image_url: publicUrl })
+      .eq('id', recipeId);
+
+    if (updateError) {
+      return res.status(500).json({ error: 'Failed to update recipe with image URL' });
+    }
+
+    return res.status(200).json({ success: true, publicUrl });
   });
 }
